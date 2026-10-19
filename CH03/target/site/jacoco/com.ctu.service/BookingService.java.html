@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BookingService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">hotel-booking-testing</a> &gt; <a href="index.source.html" class="el_package">com.ctu.service</a> &gt; <span class="el_source">BookingService.java</span></div><h1>BookingService.java</h1><pre class="source lang-java linenums">package com.ctu.service;
+import com.ctu.exception.PaymentFailedException;
+import com.ctu.exception.RoomNotAvailableException;
+import com.ctu.model.BookingReceipt;
+import com.ctu.model.Room;
+import com.ctu.repository.RoomRepository;
+import java.util.UUID;
+public class BookingService {
+    private final RoomRepository roomRepository;
+    private final PaymentGateway paymentGateway;
+    public BookingService(RoomRepository roomRepository, PaymentGateway
+<span class="fc" id="L12">            paymentGateway) {</span>
+<span class="fc" id="L13">        this.roomRepository = roomRepository;</span>
+<span class="fc" id="L14">        this.paymentGateway = paymentGateway;</span>
+<span class="fc" id="L15">    }</span>
+    /**
+     * Dat phong khach san
+     * Pre-conditions: roomId not null, nights &gt; 0, creditCard not null &amp; not
+     empty
+     */
+    public BookingReceipt bookRoom(String roomId, int nights, String
+            creditCard) {
+// Edge Case 1: Kiem tra tham so dau vao
+<span class="fc bfc" id="L24" title="All 6 branches covered.">        if (roomId == null || nights &lt;= 0 || creditCard == null ||</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">                creditCard.trim().isEmpty()) {</span>
+<span class="fc" id="L26">            throw new IllegalArgumentException(&quot;Tham so dat phong khong hop le!&quot;);</span>
+        }
+// Edge Case 2: Tra cuu phong
+<span class="fc" id="L29">        Room room = roomRepository.findById(roomId)</span>
+<span class="fc" id="L30">                .orElseThrow(() -&gt; new RoomNotAvailableException(&quot;Khong tim thay phong: &quot; + roomId));</span>
+// Edge Case 3: Kiem tra phong con trong khong
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (!room.isAvailable()) {</span>
+<span class="fc" id="L33">            throw new RoomNotAvailableException(&quot;Phong da duoc dat truoc do: &quot;</span>
+                    + roomId);
+        }
+// Tinh tien
+<span class="fc" id="L37">        double totalAmount = room.getPricePerNight() * nights;</span>
+// Edge Case 4: Xu ly thanh toan
+<span class="fc" id="L39">        boolean paymentSuccess = paymentGateway.charge(creditCard,</span>
+                totalAmount);
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (!paymentSuccess) {</span>
+<span class="fc" id="L42">            throw new PaymentFailedException(&quot;Thanh toan qua the credit card that bai!&quot;);</span>
+        }
+// Cap nhat trang thai phong &amp; Luu CSDL
+<span class="fc" id="L45">        room.setAvailable(false);</span>
+<span class="fc" id="L46">        roomRepository.save(room);</span>
+<span class="fc" id="L47">        return new BookingReceipt(UUID.randomUUID().toString(), roomId,</span>
+                totalAmount);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
